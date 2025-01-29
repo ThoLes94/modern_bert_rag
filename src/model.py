@@ -16,9 +16,7 @@ class ModernBertHF:
         tokenizer_path = os.path.join(
             root_local_path, "tokenizer/", self.model_id.replace("/", "-")
         )
-        bert_path = os.path.join(
-            root_local_path, "bert/", self.model_id.replace("/", "-")
-        )
+        bert_path = os.path.join(root_local_path, "bert/", self.model_id.replace("/", "-"))
         if os.path.isdir(tokenizer_path):
             self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
         else:
