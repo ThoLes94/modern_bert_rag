@@ -1,0 +1,29 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.so
+*.pyc
+
+# Jupyter Notebook checkpoints
+notebooks/.ipynb_checkpoints
+
+# Mypy cache
+.mypy_cache/
+
+# Model weights & large files
+checkpoints/
+*.bin
+
+# Logs & temp files
+logs/
+*.log
+*.tmp
+*.swp
+
+# VSCode settings
+.vscode/
+*.code-workspace
+
+# OS-specific files
+.DS_Store
+Thumbs.db
