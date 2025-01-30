@@ -62,7 +62,7 @@ class BERTWrapper(torch.nn.Module):
         if torch.cuda.is_available() and torch.cuda.device_count() > 1:
             world_size = torch.cuda.device_count()
             doc_chunks = self._chunk_data(corpus, world_size)  # Split documents for each GPU
-            self.embeddings = []
+            self.embeddings = {}
 
             queue = mp.Queue()
             mp.spawn(
@@ -72,10 +72,10 @@ class BERTWrapper(torch.nn.Module):
                 join=True,
             )
             while not queue.empty():
-                self.embeddings.extend(queue.get())
+                self.embeddings.update(queue.get())
         else:
             for name, doc in corpus.items():
-                self.embeddings.append(self.encode_document([doc]))
+                self.embeddings[name] = self.encode_document([doc])
 
     def encode_chunk_docs(self, rank, world_size, doc_chunks, queue):
         setup_ddp(rank, world_size)
@@ -84,15 +84,15 @@ class BERTWrapper(torch.nn.Module):
 
         # Load tokenizer and model
         model = DDP(self.model, device_ids=[rank], output_device=rank)
-        local_embeddings = []
-        for doc in doc_chunks:
+        local_embeddings = {}
+        for name, doc in doc_chunks.items():
             inputs = self.tokenizer(doc, return_tensors="pt", padding=True, truncation=True).to(
                 device
             )
             with torch.no_grad():
                 outputs = model(**inputs)
             embeddings = outputs.last_hidden_state.mean(dim=1)  # Mean pooling
-            local_embeddings.append(embeddings.cpu())  # Move back to CPU
+            local_embeddings[name] = embeddings.cpu()  # Move back to CPU
 
         queue.put(local_embeddings)
         # Synchronize processes & gather results
