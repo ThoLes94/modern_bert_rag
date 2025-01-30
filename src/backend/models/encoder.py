@@ -30,12 +30,12 @@ class BERTWrapper(torch.nn.Module):
         self.model = SentenceTransformer(model_path.value)
         self.tokenizer = AutoTokenizer.from_pretrained(model_path.value)
 
-    def encode_prompt(self, texts: List[str]) -> npt.NDArray[np.float32]:
+    def encode_prompts(self, texts: List[str]) -> npt.NDArray[np.float32]:
         with torch.no_grad():
             query_embeddings = self.model.encode([f"search_query: {txt}" for txt in texts])
         return query_embeddings
 
-    def encode_document(self, docs: List[str]) -> npt.NDArray[np.float32]:
+    def encode_documents(self, docs: List[str]) -> npt.NDArray[np.float32]:
         # TODO: verify numbers of tokens?
         with torch.no_grad():
             doc_embeddings = self.model.encode([f"search_document: {txt}" for txt in docs])
@@ -64,7 +64,8 @@ class BERTWrapper(torch.nn.Module):
             doc_chunks = self._chunk_data(corpus, world_size)  # Split documents for each GPU
             self.embeddings = {}
 
-            queue = mp.Queue()
+            queue: "mp.Queue[Dict[str, torch.Tensor]]" = mp.Queue()
+
             mp.spawn(
                 self.encode_chunk_docs,
                 args=(world_size, doc_chunks, queue),
@@ -75,7 +76,7 @@ class BERTWrapper(torch.nn.Module):
                 self.embeddings.update(queue.get())
         else:
             for name, doc in corpus.items():
-                self.embeddings[name] = self.encode_document([doc])
+                self.embeddings[name] = self.encode_documents([doc])
 
     def encode_chunk_docs(self, rank, world_size, doc_chunks, queue):
         setup_ddp(rank, world_size)
@@ -105,13 +106,13 @@ class BERTWrapper(torch.nn.Module):
 if __name__ == "__main__":
     bert_wrapper = BERTWrapper(BertPath.modern_bert)
 
-    query_embeddings = bert_wrapper.encode_prompt(
+    query_embeddings = bert_wrapper.encode_prompts(
         [
             "What is TSNE?",
             "Who is Laurens van der Maaten?",
         ]
     )
-    doc_embeddings = bert_wrapper.encode_document(
+    doc_embeddings = bert_wrapper.encode_documents(
         [
             "TSNE is a dimensionality reduction algorithm created by Laurens van Der Maaten",
         ]
