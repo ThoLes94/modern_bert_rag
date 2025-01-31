@@ -1,4 +1,6 @@
 # from chainlit.utils import mount_chainlit
+from typing import Dict
+
 from fastapi import FastAPI
 from pydantic import BaseModel
 
@@ -33,7 +35,7 @@ class QueryRequest(BaseModel):
 
 
 @app.post("/query")
-async def query_rag(request: QueryRequest):
+async def query_rag(request: QueryRequest) -> Dict[str, str]:
     """API endpoint to get answers from RAG."""
     response = rag_wrapper.answer_question(request.question)
     return {"answer": response}

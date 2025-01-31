@@ -4,7 +4,7 @@ import httpx
 FASTAPI_URL = "http://localhost:8000/query"  # Adjust if needed
 
 
-@cl.on_message
+@cl.on_message  # type: ignore
 async def main(message: cl.Message) -> None:
     """Handles incoming messages and calls FastAPI RAG API."""
     try:
