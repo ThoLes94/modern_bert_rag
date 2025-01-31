@@ -25,6 +25,7 @@ class BiEncoderRetriever:
         self.doc_names: List[str] = []
 
     def embed_corpus(self, corpus: Iterable[Tuple[str, str]]) -> None:
+        # TODO: add multi-processing
         for doc_name, doc in corpus:
             doc_embed = self.encoder.encode_documents([doc])
             if self.save_embed_on_disk:
