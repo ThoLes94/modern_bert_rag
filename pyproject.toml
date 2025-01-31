@@ -17,6 +17,7 @@ flake8 = "^7.1.1"
 sentence-transformers = "^3.4.1"
 protobuf = "^5.29.3"
 accelerate = ">=0.26.0"
+chainlit = "^2.1.0"
 
 
 [build-system]

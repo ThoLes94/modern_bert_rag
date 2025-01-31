@@ -27,3 +27,8 @@ logs/
 # OS-specific files
 .DS_Store
 Thumbs.db
+
+local_docs/
+
+# chainlit
+.chainlit/

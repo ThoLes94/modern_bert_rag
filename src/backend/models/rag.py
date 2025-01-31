@@ -34,7 +34,6 @@ class RAGWrapper:
 
     def answer_question(self, question: str) -> str:
         best_document_name = self.retriver.retrieve(question)[0][0]
-        print(best_document_name)
         best_document = self.corpus[best_document_name]
 
         prompt = self.format_prompt(best_document, question)
@@ -51,12 +50,26 @@ if __name__ == "__main__":
         ),
         ("TSNE", "TSNE is a dimensionality reduction algorithm created by Laurens van Der Maaten"),
         ("horse", "The horse is white."),
+        (
+            "first line treatement",
+            "The first-line therapy for patients with metastatic pancreatic cancer is FOLFIRINOX",
+        ),
+        (
+            "second line treatement",
+            "The second-line therapy for patients with metastatic pancreatic cancer is Gemzar-Abraxane",
+        ),
     ]
     rag_wrapper = RAGWrapper(BertPath.modern_bert, llm_type=LLMType.mistral_7b)
 
     rag_wrapper.prepare_corpus(corpus)
 
-    queries = ["When is born Emannuel Macron?", "What color is the horse?", "What is TSNE?"]
+    queries = [
+        "When is born Emannuel Macron?",
+        "What color is the horse?",
+        "What is TSNE?",
+        "What is the second line of the metastatic pancreatic cancer?",
+        "What is the first line of the metastatic pancreatic cancer?",
+    ]
 
     for query in queries:
         print(rag_wrapper.answer_question(query))
