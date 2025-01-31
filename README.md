@@ -1,12 +1,13 @@
 # modern_bert_rag
 
 ## Main Tasks:
-- [] Working Encoder
-- [] Working Retriver
-- [] Working LLm
-- [] Working RAG
-- [] Working API
-- [] Working front
+- [x] Working Encoder
+- [x] Working Retriver
+- [x] Working LLm
+- [x] Working RAG
+- [x] Working API
+- [x] Working front
+- [] Add evaluation of the encoder
 
 ## Subtasks:
 
