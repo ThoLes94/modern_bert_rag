@@ -34,3 +34,9 @@ pre-commit:
 
 mypy:
 	mypy src
+
+launch_backend:
+	uvicorn src.backend.api.main:app --reload --reload-dir src/backend
+
+launch_frontend:
+	chainlit run src/frontend/my_cl_app.py --port 8501
