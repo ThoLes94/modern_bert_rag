@@ -21,7 +21,7 @@ class BiEncoderRetriever:
         if self.save_embed_on_disk:
             self.root_folder = root_folder if root_folder is not None else tempfile.gettempdir()
 
-        self.embedding: List[npt.ArrayLike] = []
+        self.embedding: List[npt.NDArray[np.float32]] = []
         self.doc_names: List[str] = []
 
     def embed_corpus(self, corpus: Iterable[Tuple[str, str]]) -> None:
@@ -33,10 +33,10 @@ class BiEncoderRetriever:
                 self.doc_names.append(doc_name)
                 self.embedding.append(doc_embed)
 
-    def _save_embed_doc(self, doc_name: str, doc_embed: npt.ArrayLike) -> None:
+    def _save_embed_doc(self, doc_name: str, doc_embed: npt.NDArray[np.float32]) -> None:
         np.save(os.path.join(self.root_folder, doc_name + "_embed.npy"), doc_embed)
 
-    def _chunk_data(self, data: Dict[str, str], num_chunks) -> List[Dict[str, str]]:
+    def _chunk_data(self, data: Dict[str, str], num_chunks: int) -> List[Dict[str, str]]:
         """Split data into approximately equal chunks."""
         keys_chunks = [list(data.keys())[i::num_chunks] for i in range(num_chunks)]
         values_chunks = [list(data.values())[i::num_chunks] for i in range(num_chunks)]
@@ -44,13 +44,13 @@ class BiEncoderRetriever:
             {k: v for k, v in zip(keys, values)} for keys, values in zip(keys_chunks, values_chunks)
         ]
 
-    def retrieve(self, query) -> List[str]:
+    def retrieve(self, query: str) -> List[str]:
         query_embedding = self.encoder.encode_querys([query])
         similarity_scores = self._score(query_embedding)
         return cast(List[str], (np.array(self.doc_names)[np.argsort(-similarity_scores)]).tolist())
 
-    def _score(self, query_embedding):
-        return query_embedding @ np.concat(self.embedding).T  # Example dot product
+    def _score(self, query_embedding: npt.NDArray[np.float32]) -> npt.NDArray[np.float32]:
+        return query_embedding @ np.concatenate(self.embedding).T  # Example dot product
 
 
 if __name__ == "__main__":
