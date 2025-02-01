@@ -8,7 +8,7 @@ FASTAPI_URL = "http://localhost:8000/query"  # Adjust if needed
 async def main(message: cl.Message) -> None:
     """Handles incoming messages and calls FastAPI RAG API."""
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=120.0) as client:
             response = await client.post(FASTAPI_URL, json={"question": message.content})
             if response.status_code == 200:
                 answer = response.json().get("answer", "Sorry, no response available.")

@@ -28,9 +28,10 @@ class BERTWrapper:
     def encode_documents(self, docs: List[str]) -> npt.NDArray[np.float32]:
         # TODO: verify numbers of tokens?
         with torch.no_grad():
-            doc_embeddings: npt.NDArray[np.float32] = self.model.encode(
-                [f"search_document: {txt}" for txt in docs]
-            )
+            with torch.autocast(device_type="mps", dtype=torch.bfloat16):
+                doc_embeddings: npt.NDArray[np.float32] = self.model.encode(
+                    [f"search_document: {txt}" for txt in docs]
+                )
         return doc_embeddings
 
     def get_similarity(

@@ -1,9 +1,11 @@
 # from chainlit.utils import mount_chainlit
-from typing import Dict
+from typing import Dict, Iterable, List
 
 from fastapi import FastAPI
 from pydantic import BaseModel
+from torch.utils.data import DataLoader
 
+from src.backend.corpus.corpus import DatasetWrapper
 from src.backend.models.encoder import BertPath
 from src.backend.models.llm import LLMType
 from src.backend.models.rag import RAGWrapper
@@ -14,20 +16,11 @@ app = FastAPI()
 rag_wrapper = RAGWrapper(BertPath.modern_bert, llm_type=LLMType.mistral_7b)
 
 # Prepare corpus at startup
-corpus = [
-    ("Emmanuel Macron", "Emmanuel Macron was born on December 21, 1977, in Amiens, France."),
-    ("TSNE", "TSNE is a dimensionality reduction algorithm created by Laurens van Der Maaten"),
-    ("horse", "The horse is white."),
-    (
-        "first line treatment",
-        "The first-line therapy for metastatic pancreatic cancer is FOLFIRINOX",
-    ),
-    (
-        "second line treatment",
-        "The second-line therapy for metastatic pancreatic cancer is Gemzar-Abraxane",
-    ),
-]
-rag_wrapper.prepare_corpus(corpus)
+corpus = DatasetWrapper("src/backend/corpus/docs.mistral.ai")
+
+dataloader: Iterable[Dict[str, List[str]]] = DataLoader(corpus, batch_size=1)
+
+rag_wrapper.prepare_corpus(dataloader)
 
 
 class QueryRequest(BaseModel):
