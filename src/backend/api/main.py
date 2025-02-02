@@ -6,21 +6,21 @@ from pydantic import BaseModel
 from torch.utils.data import DataLoader
 
 from src.backend.corpus.corpus import DatasetWrapper
-from src.backend.models.encoder import BertPath
-from src.backend.models.llm import LLMType
+from src.backend.models.encoder import BertHFPath
+from src.backend.models.llm import LLMHFPath
 from src.backend.models.rag import RAGWrapper
 
 app = FastAPI()
 
 # Initialize RAG system
-rag_wrapper = RAGWrapper(BertPath.modern_bert, llm_type=LLMType.mistral_7b)
 
 # Prepare corpus at startup
-corpus = DatasetWrapper("src/backend/corpus/docs.mistral.ai")
 
+corpus = DatasetWrapper("data/corpus/docs.mistral.ai")
 dataloader: Iterable[Dict[str, List[str]]] = DataLoader(corpus, batch_size=1)
-
-rag_wrapper.prepare_corpus(dataloader)
+rag_wrapper = RAGWrapper(
+    BertHFPath.modern_bert_large, llm_type=LLMHFPath.mistral_7b, corpus=dataloader
+)
 
 
 class QueryRequest(BaseModel):
@@ -34,4 +34,15 @@ async def query_rag(request: QueryRequest) -> Dict[str, str]:
     return {"answer": response}
 
 
-# mount_chainlit(app=app, target="src/frontend/my_cl_app.py", path="/chainlit")
+@app.post("/deactivate_llm")
+async def deactivate_llm() -> Dict[str, bool]:
+    """API endpoint to get answers from RAG."""
+    rag_wrapper.use_llm = False
+    return {"llm_state": False}
+
+
+@app.post("/activate_llm")
+async def acivate_llm() -> Dict[str, bool]:
+    """API endpoint to get answers from RAG."""
+    rag_wrapper.use_llm = True
+    return {"llm_state": True}
