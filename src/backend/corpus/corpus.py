@@ -14,7 +14,8 @@ class DatasetWrapper(IterableDataset):
         self.chunk_size = chunk_size
 
     def find_all_files(self) -> None:
-        self.list_files: List[str] = list(Path(self.root).rglob("*.txt"))
+        self.list_files: List[Path] = list(Path(self.root).rglob("*.txt"))
+        assert len(self.list_files), "No documents found"
 
     def _read_file_in_chunks(self, file_path: Path) -> Iterator[Dict[str, str]]:
         with file_path.open("r", encoding="utf-8") as f:
@@ -36,7 +37,7 @@ class DatasetWrapper(IterableDataset):
 
 
 if __name__ == "__main__":
-    corpus = DatasetWrapper("src/backend/corpus/docs.mistral.ai")
+    corpus = DatasetWrapper("data/corpus/docs.mistral.ai")
 
     dataloader = DataLoader(corpus, batch_size=2)
     for k in dataloader:

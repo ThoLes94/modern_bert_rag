@@ -1,1 +1,1 @@
-from .encoder import BERTWrapper  # noqa: F401
+from .encoder import BERTWrapperHF  # noqa: F401

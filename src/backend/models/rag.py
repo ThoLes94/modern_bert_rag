@@ -5,28 +5,45 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from src.backend.corpus.corpus import DatasetWrapper
-from src.backend.models.encoder import BertPath
-from src.backend.models.llm import LLMType, LLMWrapper
+from src.backend.models.encoder import BertHFPath
+from src.backend.models.llm import LLMHFPath, LLMWrapper
 from src.backend.models.retriever import BiEncoderRetriever
 
 
 class RAGWrapper:
-    def __init__(self, encoder_type: BertPath, llm_type: LLMType, use_llm: bool = False) -> None:
+    def __init__(
+        self,
+        encoder_type: BertHFPath,
+        llm_type: LLMHFPath,
+        corpus: Iterable[Dict[str, List[str]]],
+        use_llm: bool = False,
+    ) -> None:
         self.llm_type = llm_type
         self.retriver = BiEncoderRetriever(
-            encoder_type, save_embed_on_disk=True, root_folder="data/"
+            encoder_type, save_load_embed_on_disk=True, root_folder="data/"
         )
+        self._prepare_corpus(corpus)
         self.use_llm = use_llm
 
-    def prepare_corpus(self, corpus: Iterable[Dict[str, List[str]]]) -> None:
+    @property
+    def use_llm(self) -> bool:
+        return self._use_llm
+
+    @use_llm.setter
+    def use_llm(self, use_llm: bool) -> None:
+        self._use_llm = use_llm
+        if use_llm:
+            self._initialize_llm()
+        elif hasattr(self, "llm"):
+            self.__delattr__("llm")
+
+    def _prepare_corpus(self, corpus: Iterable[Dict[str, List[str]]]) -> None:
         self.corpus: Dict[str, str] = {}
         for docs in tqdm(corpus):
             self.corpus.update(
                 {doc_id: doc_content for doc_id, doc_content in zip(docs["id"], docs["content"])}
             )
             self.retriver.embed_corpus(docs)
-        if self.use_llm:
-            self._initialize_llm()
 
     def _initialize_llm(self) -> None:
         self.llm = LLMWrapper(self.llm_type)
@@ -34,7 +51,7 @@ class RAGWrapper:
             Use only the following pieces of context to answer the question. Don't make up any new information!"""
         _ = self.llm.generate_answer(initial_message, None)
 
-    def format_prompt(self, retrieved_chunk: str, question: str) -> str:
+    def _format_prompt(self, retrieved_chunk: str, question: str) -> str:
         prompt = f"""
         Context information is below.
         ---------------------
@@ -46,15 +63,17 @@ class RAGWrapper:
         """
         return prompt
 
-    def answer_question(self, question: str) -> str:
-        best_document_name = self.retriver.retrieve(question)[0][0]
-        # second_best_document_name = self.retriver.retrieve(question)[0][1]
-        best_document = self.corpus[best_document_name]
-        # second_best_document = self.corpus[second_best_document_name]
+    def answer_question(self, question: str, return_n_doc: int = 1) -> str:
+        documents = "\n".join(
+            [
+                self.corpus[document_name]
+                for document_name in self.retriver.retrieve(question)[0][:return_n_doc]
+            ]
+        )
         if not self.use_llm:
-            return best_document
+            return documents
 
-        prompt = self.format_prompt(best_document, question)
+        prompt = self._format_prompt(documents, question)
 
         llm_output = self.llm.generate_answer(prompt=prompt)
         return llm_output.last_answer
@@ -73,8 +92,13 @@ if __name__ == "__main__":
             ],
         }
     ]
-    rag_wrapper = RAGWrapper(BertPath.modern_bert, llm_type=LLMType.mistral_7b)
-    rag_wrapper.prepare_corpus(corpus)
+    rag_wrapper = RAGWrapper(
+        BertHFPath.modern_bert_large, llm_type=LLMHFPath.mistral_7b, corpus=corpus
+    )
+    rag_wrapper._prepare_corpus(corpus)
+
+    rag_wrapper.use_llm = False
+    rag_wrapper.use_llm = True
 
     queries = [
         "When is born Emannuel Macron?",

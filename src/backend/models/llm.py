@@ -11,7 +11,7 @@ from transformers.cache_utils import (
 )
 
 
-class LLMType(str, Enum):
+class LLMHFPath(str, Enum):
     mistral_7b = "mistralai/Mistral-7B-Instruct-v0.3"
 
 
@@ -22,7 +22,7 @@ class LLMResult:
 
 
 class LLMWrapper:
-    def __init__(self, llm_type: LLMType = LLMType.mistral_7b, device: str = "mps") -> None:
+    def __init__(self, llm_type: LLMHFPath = LLMHFPath.mistral_7b, device: str = "mps") -> None:
         self.model = AutoModelForCausalLM.from_pretrained(
             llm_type.value, torch_dtype=torch.bfloat16, device_map=device
         )

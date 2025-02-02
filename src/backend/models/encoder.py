@@ -8,15 +8,20 @@ from sentence_transformers import SentenceTransformer
 from transformers import AutoTokenizer
 
 
-class BertPath(str, Enum):
-    modern_bert = "lightonai/modernbert-embed-large"
+class BertHFPath(str, Enum):
+    modern_bert_large = "lightonai/modernbert-embed-large"
+    modern_bert_base = "nomic-ai/modernbert-embed-base"
 
 
-class BERTWrapper:
-    def __init__(self, model_path: BertPath = BertPath.modern_bert) -> None:
-        super().__init__()
+class BERTWrapperHF:
+    def __init__(
+        self,
+        model_path: BertHFPath = BertHFPath.modern_bert_large,
+        device: str = "mps",
+    ) -> None:
         self.model = SentenceTransformer(model_path.value)
         self.tokenizer = AutoTokenizer.from_pretrained(model_path.value)
+        self.model.to(device)
 
     def encode_querys(self, texts: List[str]) -> npt.NDArray[np.float32]:
         with torch.no_grad():
@@ -42,7 +47,7 @@ class BERTWrapper:
 
 
 if __name__ == "__main__":
-    bert_wrapper = BERTWrapper(BertPath.modern_bert)
+    bert_wrapper = BERTWrapperHF(BertHFPath.modern_bert_large)
 
     query_embeddings = bert_wrapper.encode_querys(
         [
