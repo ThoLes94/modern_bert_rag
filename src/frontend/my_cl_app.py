@@ -1,4 +1,4 @@
-from typing import List, cast
+from typing import Dict, List, Optional, cast
 
 import chainlit as cl
 import httpx
@@ -11,7 +11,7 @@ HTTP_TIMEOUT = 120.0
 USE_LLM: List[bool] = [False]
 
 
-async def fetch_response(endpoint: str, payload: dict = None) -> str:
+async def fetch_response(endpoint: str, payload: Optional[Dict[str, str]] = None) -> str:
     """Handles HTTP requests to the backend."""
     try:
         async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
