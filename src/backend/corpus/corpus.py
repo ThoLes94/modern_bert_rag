@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader, IterableDataset
 #     bright_biology =
 
 
-class DatasetWrapper(IterableDataset):
+class DatasetWrapper(IterableDataset[Dict[str, str]]):
     def __init__(self, path_to_files: str, chunk_size: int = 2048) -> None:
         self.root = path_to_files
         self.find_all_files()
