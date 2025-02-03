@@ -10,13 +10,7 @@ check_black:
 black:
 	python -m black -t py310 --line-length 100 ${STYLE_PACKAGES}
 
-isort:
-	ruff check --select I --fix ${STYLE_PACKAGES}
-
-check_isort:
-	ruff check --select I ${STYLE_PACKAGES}
-
-style: black isort
+style: black
 
 checks: style lint mypy
 

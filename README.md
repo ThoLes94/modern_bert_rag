@@ -1,20 +1,101 @@
-# modern_bert_rag
+# **ModernBERT RAG**
 
-## Main Tasks:
+This repository packages the **ModernBERT** bi-encoder as an API for **Retrieval-Augmented Generation (RAG)**.
+The provided use case is based on the **Mistral AI documentation**, downloaded from:
+🔗 [Mistral Docs](https://docs.mistral.ai)
+
+## 🚀 **How It Works**
+
+### **Architecture**
+- **Backend**: A FastAPI-based API that handles encoding, retrieval, and LLM inference.
+- **Frontend**: A Chainlit-based UI for user interaction.
+
+## 🛠️ **Installation**
+
+### **1. Create and Activate Conda Environment**
+```sh
+conda create -n modern_bert python=3.10
+conda activate modern_bert
+```
+
+### **2. Install Dependencies**
+```sh
+poetry install
+```
+
+## 🔥 **Running the Servers**
+
+### **Frontend (Chainlit UI)**
+```sh
+make frontend
+```
+
+### **Backend (FastAPI)**
+```sh
+make backend
+```
+
+---
+
+## ✅ **Main Features**
 - [x] Working Encoder
-- [x] Working Retriver
-- [x] Working LLm
-- [x] Working RAG
-- [x] Working API
-- [x] Working front
-- [] Add evaluation of the encoder
+- [x] Working Retriever
+- [x] Integrated LLM
+- [x] Fully Functional RAG Pipeline
+- [x] Exposed API
+- [x] Interactive Frontend
+- [ ] Add Encoder Evaluation
 
-## Subtasks:
+---
 
-- Encoder
-    - [] Add multi-processing for corpus embedding
-    - [] Support better structure of datasets
-    - [] Add second encoder for comparison
+## 🔄 **Planned Improvements**
 
-- RAG
-    - [] Add llm preprocesing for generating the query
+### **🔹 Encoder Enhancements**
+- [ ] Implement multi-processing for faster corpus embedding
+- [x] Improve dataset structure support
+- [ ] Add a second encoder for comparison
+
+### **🔹 RAG Improvements**
+- [ ] Add LLM pre-processing for better query generation
+
+---
+
+## 📡 **API Usage**
+
+### **Base URL**
+```
+http://localhost:8000/
+```
+
+### **Endpoints**
+
+#### 🔹 **1. Query the RAG System**
+**Endpoint:**
+```http
+POST /query
+```
+**Request Body:**
+```json
+{
+  "question": "What is Mistral?", "use_llm": true, "retrieve_n_docs": 1
+}
+```
+**Response:**
+```json
+{
+  "answer": "Mistral, based on the provided context, is a company that develops and releases various models, including text and image understanding models, open-source models, and a math model. It also offers APIs for text generation, vision analysis, code generation, embeddings, function calling, fine-tuning, JSON mode, and guardrailing."
+}
+```
+
+---
+
+## 🎯 **Example Usage**
+You can interact with the API using **cURL**, **Python (requests/httpx)**, or **Postman**.
+
+### **Using `httpx` in Python**
+```python
+import httpx
+
+response = httpx.post("http://localhost:8000/query", json={"question": "What is ModernBERT?"})
+print(response.json())
+```

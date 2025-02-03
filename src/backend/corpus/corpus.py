@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Generator, Iterable, Iterator, List
+from typing import Dict, Iterator, List
 
 from torch.utils.data import DataLoader, IterableDataset
 
