@@ -1,10 +1,7 @@
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, List
 
-import torch
-from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from src.backend.corpus.corpus import DatasetWrapper
 from src.backend.models.encoder import BertHFPath
 from src.backend.models.llm import LLMHFPath, LLMWrapper
 from src.backend.models.retriever import BiEncoderRetriever
@@ -16,26 +13,13 @@ class RAGWrapper:
         encoder_type: BertHFPath,
         llm_type: LLMHFPath,
         corpus: Iterable[Dict[str, List[str]]],
-        use_llm: bool = False,
     ) -> None:
         self.llm_type = llm_type
         self.retriver = BiEncoderRetriever(
             encoder_type, save_load_embed_on_disk=True, root_folder="data/"
         )
         self._prepare_corpus(corpus)
-        self.use_llm = use_llm
-
-    @property
-    def use_llm(self) -> bool:
-        return self._use_llm
-
-    @use_llm.setter
-    def use_llm(self, use_llm: bool) -> None:
-        self._use_llm = use_llm
-        if use_llm:
-            self._initialize_llm()
-        elif hasattr(self, "llm"):
-            self.__delattr__("llm")
+        self._initialize_llm()
 
     def _prepare_corpus(self, corpus: Iterable[Dict[str, List[str]]]) -> None:
         self.corpus: Dict[str, str] = {}
@@ -63,14 +47,14 @@ class RAGWrapper:
         """
         return prompt
 
-    def answer_question(self, question: str, return_n_doc: int = 1) -> str:
+    def answer_question(self, question: str, use_llm: bool = False, return_n_doc: int = 1) -> str:
         documents = "\n".join(
             [
                 self.corpus[document_name]
                 for document_name in self.retriver.retrieve(question)[0][:return_n_doc]
             ]
         )
-        if not self.use_llm:
+        if not use_llm:
             return documents
 
         prompt = self._format_prompt(documents, question)
@@ -95,10 +79,8 @@ if __name__ == "__main__":
     rag_wrapper = RAGWrapper(
         BertHFPath.modern_bert_large, llm_type=LLMHFPath.mistral_7b, corpus=corpus
     )
-    rag_wrapper._prepare_corpus(corpus)
-
-    rag_wrapper.use_llm = False
-    rag_wrapper.use_llm = True
+    # rag_wrapper.use_llm = False
+    # rag_wrapper.use_llm = True
 
     queries = [
         "When is born Emannuel Macron?",

@@ -29,7 +29,6 @@ class LLMWrapper:
         self.tokenizer = AutoTokenizer.from_pretrained(llm_type.value)
         self.start_new_conversation()
         self.device = device
-        # self.model.to(self.device)
 
     def start_new_conversation(self) -> None:
         self.past_key_values = DynamicCache()
@@ -78,17 +77,10 @@ if __name__ == "__main__":
     # format and tokenize the tool use prompt
 
     user_prompts = [
-        ("Hello, I'm Thomas, what's your name?", tools),
+        ("Hello, I'm Thomas, what's your name?", None),
         ("Btw, yesterday I was on a rock concert.", None),
         ("What's my name?", None),
         ("What's the weather like in Paris?", None),
-    ]
-    user_prompts = [
-        ("Hello, I'm Thomas, what's your name?", tools),
-        # ("Est-ce que tu sais parler francais?", tools),
-        # ("Quelles autres langues sais-tu parler?", tools),
-        # ("What's my name?", None),
-        ("When is born Emannuel Macron?", tools),
     ]
     for prompt, tools in user_prompts:
         messages = llm_wrapper.generate_answer(prompt, tools)
