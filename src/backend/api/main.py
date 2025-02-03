@@ -25,24 +25,14 @@ rag_wrapper = RAGWrapper(
 
 class QueryRequest(BaseModel):
     question: str
+    use_llm: bool = False
+    return_n_doc: int = 1
 
 
 @app.post("/query")
 async def query_rag(request: QueryRequest) -> Dict[str, str]:
     """API endpoint to get answers from RAG."""
-    response = rag_wrapper.answer_question(request.question)
+    response = rag_wrapper.answer_question(
+        request.question, use_llm=request.use_llm, return_n_doc=request.return_n_doc
+    )
     return {"answer": response}
-
-
-@app.post("/deactivate_llm")
-async def deactivate_llm() -> Dict[str, bool]:
-    """API endpoint to get answers from RAG."""
-    rag_wrapper.use_llm = False
-    return {"llm_state": False}
-
-
-@app.post("/activate_llm")
-async def acivate_llm() -> Dict[str, bool]:
-    """API endpoint to get answers from RAG."""
-    rag_wrapper.use_llm = True
-    return {"llm_state": True}

@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, cast
 
 import chainlit as cl
 import httpx
@@ -7,11 +7,8 @@ import httpx
 FASTAPI_URL = "http://localhost:8000/"
 HTTP_TIMEOUT = 120.0
 
-# LLM Activation State
-USE_LLM: List[bool] = [False]
 
-
-async def fetch_response(endpoint: str, payload: Optional[Dict[str, str]] = None) -> str:
+async def fetch_response(endpoint: str, payload: Optional[Dict[str, Any]] = None) -> str:
     """Handles HTTP requests to the backend."""
     try:
         async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
@@ -26,7 +23,9 @@ async def fetch_response(endpoint: str, payload: Optional[Dict[str, str]] = None
 @cl.on_message
 async def main(message: cl.Message) -> None:
     """Handles incoming messages and calls FastAPI RAG API."""
-    answer = await fetch_response("query", {"question": message.content})
+    answer = await fetch_response(
+        "query", {"question": message.content, "use_llm": cl.user_session.get("use_llm", False)}
+    )
     await cl.Message(content=answer).send()
 
 
@@ -41,18 +40,16 @@ async def start() -> None:
             label="Activate/Deactivate the LLM!",
         )
     ]
-    await cl.Message(content="Use the action button below:", actions=actions).send()
+    cl.user_session.set("use_llm", False)
+    await cl.Message(
+        content="You can activate/deactivate the use of the LLm with this button:", actions=actions
+    ).send()
 
 
 @cl.action_callback("change_llm_state")
 async def toggle_llm(action: cl.Action) -> None:
     """Toggles the LLM activation state."""
-    endpoint = "activate_llm" if not USE_LLM[0] else "deactivate_llm"
-    response = await fetch_response(endpoint)
-
-    if "Error" not in response and "Backend is unavailable. Please try again later." != response:
-        USE_LLM[0] = not USE_LLM[0]  # Toggle state
-        status_msg = "LLM activated" if USE_LLM[0] else "LLM deactivated"
-        await cl.Message(content=status_msg).send()
-    else:
-        await cl.Message(content=response).send()
+    use_llm = cl.user_session.get("use_llm")
+    cl.user_session.set("use_llm", not use_llm)
+    status_msg = "LLM activated" if not use_llm else "LLM deactivated"
+    await cl.Message(content=status_msg).send()
