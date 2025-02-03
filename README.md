@@ -99,3 +99,14 @@ import httpx
 response = httpx.post("http://localhost:8000/query", json={"question": "What is ModernBERT?"})
 print(response.json())
 ```
+## Download Corpus
+You can try download your own corpus with the command
+
+```sh
+wget --recursive --no-parent --convert-links --page-requisites --domains docs.mistral.ai https://docs.mistral.ai
+```
+
+and the filter it and clean it with
+```sh
+python scripts.filter_corpus.py <path_to_the_corpus>
+```
