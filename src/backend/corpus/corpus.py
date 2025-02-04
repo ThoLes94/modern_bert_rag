@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Iterator, List
+from typing import Dict, Iterator, List, Optional
 
 from torch.utils.data import DataLoader, IterableDataset
 
@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader, IterableDataset
 
 
 class DatasetWrapper(IterableDataset[Dict[str, str]]):
-    def __init__(self, path_to_files: str, chunk_size: int = 2048) -> None:
+    def __init__(self, path_to_files: str, chunk_size: Optional[int] = 2048) -> None:
         self.root = path_to_files
         self.find_all_files()
         self.chunk_size = chunk_size
@@ -21,7 +21,7 @@ class DatasetWrapper(IterableDataset[Dict[str, str]]):
         with file_path.open("r", encoding="utf-8") as f:
             content = f.read()
 
-        if len(content) <= self.chunk_size:
+        if self.chunk_size is None or len(content) <= self.chunk_size:
             yield {"id": str(file_path).replace("/", "_"), "content": content}
         else:
             for i in range(0, len(content), self.chunk_size):

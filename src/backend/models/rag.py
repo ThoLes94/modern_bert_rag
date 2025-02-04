@@ -16,7 +16,7 @@ class RAGWrapper:
     ) -> None:
         self.llm_type = llm_type
         self.retriver = BiEncoderRetriever(
-            encoder_type, save_load_embed_on_disk=True, root_folder="data/"
+            encoder_type, save_load_embed_on_disk=True, root_folder="data/embedding/"
         )
         self._prepare_corpus(corpus)
         self._initialize_llm()
@@ -51,7 +51,7 @@ class RAGWrapper:
         documents = "\n".join(
             [
                 self.corpus[document_name]
-                for document_name in self.retriver.retrieve(question)[0][:return_n_doc]
+                for document_name in self.retriver.retrieve(question, retun_n_doc=return_n_doc)
             ]
         )
         if not use_llm:
@@ -91,4 +91,4 @@ if __name__ == "__main__":
     ]
 
     for query in queries:
-        print(rag_wrapper.answer_question(query))
+        print(rag_wrapper.answer_question(query, return_n_doc=2))

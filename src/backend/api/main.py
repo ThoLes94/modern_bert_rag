@@ -12,21 +12,20 @@ from src.backend.models.rag import RAGWrapper
 
 app = FastAPI()
 
-# Initialize RAG system
-
 # Prepare corpus at startup
-
-corpus = DatasetWrapper("data/corpus/docs.mistral.ai")
+corpus = DatasetWrapper("data/corpus/docs.mistral.ai", chunk_size=2048)
 dataloader: Iterable[Dict[str, List[str]]] = DataLoader(corpus, batch_size=1)
+
+# Initialize RAG system
 rag_wrapper = RAGWrapper(
-    BertHFPath.modern_bert_large, llm_type=LLMHFPath.mistral_7b, corpus=dataloader
+    BertHFPath.modern_bert_base, llm_type=LLMHFPath.mistral_7b, corpus=dataloader
 )
 
 
 class QueryRequest(BaseModel):
     question: str
     use_llm: bool = False
-    return_n_doc: int = 1
+    return_n_doc: int = 4
 
 
 @app.post("/query")
