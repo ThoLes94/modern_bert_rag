@@ -58,6 +58,9 @@ make backend
 ### **🔹 RAG Improvements**
 - [ ] Add LLM pre-processing for better query generation
 
+### **🔹 Retriver Improvements**
+- [x] Add Faiss for vector storage
+
 ---
 
 ## 📡 **API Usage**
