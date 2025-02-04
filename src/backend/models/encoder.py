@@ -50,14 +50,12 @@ if __name__ == "__main__":
     bert_wrapper = BERTWrapperHF(BertHFPath.modern_bert_large)
 
     query_embeddings = bert_wrapper.encode_querys(
-        [
-            "What is TSNE?",
-            "Who is Laurens van der Maaten?",
-        ]
+        ["What is TSNE?", "Who is Laurens van der Maaten?", "What color is the horse"]
     )
     doc_embeddings = bert_wrapper.encode_documents(
         [
             "TSNE is a dimensionality reduction algorithm created by Laurens van Der Maaten",
+            "The horse is white",
         ]
     )
     print(query_embeddings.shape, doc_embeddings.shape)

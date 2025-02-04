@@ -1,11 +1,14 @@
 import os
-import tempfile
-from typing import Dict, List, Optional, cast
+from typing import Dict, List, Optional
 
 import numpy as np
 import numpy.typing as npt
 
 from src.backend.models.encoder import BertHFPath, BERTWrapperHF
+
+if True:
+    # Need to import faiss after to avoid segment fault error ....
+    import faiss
 
 
 class BiEncoderRetriever:
@@ -15,10 +18,12 @@ class BiEncoderRetriever:
         root_folder: str = "data/embedding",
         save_load_embed_on_disk: bool = False,
     ) -> None:
+
         self.bert_type = bert_type.value
         self.encoder = BERTWrapperHF(bert_type)
-        self.embedding_folder = tempfile.gettempdir()
         self.save_load_embed_on_disk = save_load_embed_on_disk
+        dim = self.encoder.model.get_sentence_embedding_dimension()
+        self.faiss_index = faiss.IndexFlatIP(dim)
         self.root_folder = root_folder
         if self.save_load_embed_on_disk:
             os.makedirs(
@@ -35,22 +40,23 @@ class BiEncoderRetriever:
 
         if self.save_load_embed_on_disk and self._all_files_exist(docs_id):
             self.load_embeddings(docs_id)
-            return None
 
-        docs_embed = self.encoder.encode_documents(docs_content)
-        if self.save_load_embed_on_disk:
-            self._save_embed_doc(docs_id, docs_embed)
-        self.docs_id.extend(docs_id)
-        if self.embeddings is None:
-            self.embeddings = docs_embed
         else:
-            self.embeddings = np.concatenate((self.embeddings, docs_embed), axis=0)
+            docs_embed = self.encoder.encode_documents(docs_content)
+            self.docs_id.extend(docs_id)
+            self.faiss_index.add(docs_embed)
+
+            if self.embeddings is None:
+                self.embeddings = docs_embed
+            else:
+                self.embeddings = np.concatenate((self.embeddings, docs_embed), axis=0)
 
     def load_embeddings(self, docs_id: List[str]) -> None:
         for doc_id in docs_id:
             file_path = self._get_file_name(doc_id)
             assert os.path.exists(file_path)
             embed = np.expand_dims(np.load(file_path), axis=0)
+            self.faiss_index.add(embed)
             if self.embeddings is None:
                 self.embeddings = embed
             else:
@@ -72,10 +78,13 @@ class BiEncoderRetriever:
         for name, doc_embed in zip(docs_name, docs_embed):
             np.save(self._get_file_name(name), doc_embed)
 
-    def retrieve(self, query: str) -> List[str]:
+    def retrieve(self, query: str, retun_n_doc: int = 2) -> List[str]:
         query_embedding = self.encoder.encode_querys([query])
-        similarity_scores = self._score(query_embedding)
-        return cast(List[str], (np.array(self.docs_id)[np.argsort(-similarity_scores)]).tolist())
+
+        distances, indices = self.faiss_index.search(query_embedding, retun_n_doc)
+
+        # Print the most similar documents
+        return [self.docs_id[i] for i in indices[0]]
 
     def _score(self, queries_embedding: npt.NDArray[np.float32]) -> npt.NDArray[np.float32]:
         assert (
@@ -93,9 +102,9 @@ if __name__ == "__main__":
             "The horse is white.",
         ],
     }
-
-    bi_encoder_retriver = BiEncoderRetriever()
+    bi_encoder_retriver = BiEncoderRetriever(BertHFPath.modern_bert_large)
     bi_encoder_retriver.embed_corpus(documents)
 
+    # print(bi_encoder_retriver.embeddings.shape)
     for query in queries:
         print(bi_encoder_retriver.retrieve(query)[0])
