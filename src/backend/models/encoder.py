@@ -11,6 +11,7 @@ from transformers import AutoTokenizer
 class BertHFPath(str, Enum):
     modern_bert_large = "lightonai/modernbert-embed-large"
     modern_bert_base = "nomic-ai/modernbert-embed-base"
+    gte_large = "Alibaba-NLP/gte-large-en-v1.5"
 
 
 class BERTWrapperHF:
@@ -19,11 +20,11 @@ class BERTWrapperHF:
         model_path: BertHFPath = BertHFPath.modern_bert_large,
         device: str = "mps",
     ) -> None:
-        self.model = SentenceTransformer(model_path.value)
+        self.model = SentenceTransformer(model_path.value, trust_remote_code=True)
         self.tokenizer = AutoTokenizer.from_pretrained(model_path.value)
         self.model.to(device)
 
-    def encode_querys(self, texts: List[str]) -> npt.NDArray[np.float32]:
+    def encode_queries(self, texts: List[str]) -> npt.NDArray[np.float32]:
         with torch.no_grad():
             query_embeddings: npt.NDArray[np.float32] = self.model.encode(
                 [f"search_query: {txt}" for txt in texts]
@@ -47,9 +48,9 @@ class BERTWrapperHF:
 
 
 if __name__ == "__main__":
-    bert_wrapper = BERTWrapperHF(BertHFPath.modern_bert_large)
+    bert_wrapper = BERTWrapperHF(BertHFPath.gte_large)
 
-    query_embeddings = bert_wrapper.encode_querys(
+    query_embeddings = bert_wrapper.encode_queries(
         ["What is TSNE?", "Who is Laurens van der Maaten?", "What color is the horse"]
     )
     doc_embeddings = bert_wrapper.encode_documents(
