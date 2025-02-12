@@ -1,10 +1,7 @@
 PACKAGES=src
 STYLE_PACKAGES=$(PACKAGES)
-TEST_PACKAGES=$(PACKAGES) test
-
 
 check_black:
-	# python -m ruff format --check --diff ${STYLE_PACKAGES}
 	python -m black -t py310 --line-length 100 --check --diff ${STYLE_PACKAGES}
 
 black:
