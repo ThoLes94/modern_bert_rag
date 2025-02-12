@@ -9,15 +9,19 @@ from transformers import AutoTokenizer
 
 
 class BertHFPath(str, Enum):
-    modern_bert_large = "lightonai/modernbert-embed-large"
-    modern_bert_base = "nomic-ai/modernbert-embed-base"
+    modern_bert_large_embed = "lightonai/modernbert-embed-large"
+    modern_bert_base_embed = "nomic-ai/modernbert-embed-base"
+    modern_bert_base = "answerdotai/ModernBERT-base"
+    modern_bert_large = "answerdotai/ModernBERT-large"
+    gte_base = "Alibaba-NLP/gte-base-en-v1.5"
     gte_large = "Alibaba-NLP/gte-large-en-v1.5"
+    modern_bert_base_v2 = "Alibaba-NLP/gte-modernbert-base"
 
 
 class BERTWrapperHF:
     def __init__(
         self,
-        model_path: BertHFPath = BertHFPath.modern_bert_large,
+        model_path: BertHFPath = BertHFPath.modern_bert_large_embed,
         device: str = "mps",
     ) -> None:
         self.model = SentenceTransformer(model_path.value, trust_remote_code=True)

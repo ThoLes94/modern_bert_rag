@@ -2,6 +2,7 @@ from typing import Dict, Iterable, List
 
 from tqdm import tqdm
 
+from src.backend.corpus.corpus import DatasetWrapper
 from src.backend.models.encoder import BertHFPath
 from src.backend.models.llm import LLMHFPath, LLMWrapper
 from src.backend.models.retriever import BiEncoderRetriever
@@ -15,7 +16,7 @@ class RAGWrapper:
         corpus: Iterable[Dict[str, List[str]]],
     ) -> None:
         self.llm_type = llm_type
-        self.retriver = BiEncoderRetriever(
+        self.retriever = BiEncoderRetriever(
             encoder_type, save_load_embed_on_disk=True, root_folder="data/embedding/"
         )
         self._prepare_corpus(corpus)
@@ -27,7 +28,7 @@ class RAGWrapper:
             self.corpus.update(
                 {doc_id: doc_content for doc_id, doc_content in zip(docs["id"], docs["content"])}
             )
-            self.retriver.embed_corpus(docs)
+            self.retriever.embed_corpus(docs)
 
     def _initialize_llm(self) -> None:
         self.llm = LLMWrapper(self.llm_type)
@@ -51,7 +52,7 @@ class RAGWrapper:
         documents = "\n".join(
             [
                 self.corpus[document_name]
-                for document_name in self.retriver.retrieve(question, retun_n_doc=return_n_doc)
+                for document_name in self.retriever.retrieve(question, retun_n_doc=return_n_doc)
             ]
         )
         if not use_llm:
@@ -64,23 +65,15 @@ class RAGWrapper:
 
 
 if __name__ == "__main__":
-    corpus = [
-        {
-            "id": ["Emmanuel Macron", "TSNE", "horse", "first", "second"],
-            "content": [
-                "Emmanuel Macron was born on December 21, 1977, in Amiens, France. He is a French politician who served as the President of France from 2017 to 2022. Before his presidency, he worked as an investment banker and was an inspector of finances for the French government.",
-                "TSNE is a dimensionality reduction algorithm created by Laurens van Der Maaten",
-                "The horse is white.",
-                "The first-line therapy for patients with metastatic pancreatic cancer is FOLFIRINOX",
-                "The second-line therapy for patients with metastatic pancreatic cancer is Gemzar-Abraxane",
-            ],
-        }
-    ]
-    rag_wrapper = RAGWrapper(
-        BertHFPath.modern_bert_large, llm_type=LLMHFPath.mistral_7b, corpus=corpus
+    corpus = DatasetWrapper(
+        "data/corpus/docs.mistral.ai", chunk_size=2048, tokenizer_path=BertHFPath.modern_bert_base
     )
-    # rag_wrapper.use_llm = False
-    # rag_wrapper.use_llm = True
+    dataloader = corpus.generate_dataloader(batch_size=10)
+
+    # Initialize RAG system
+    rag_wrapper = RAGWrapper(
+        BertHFPath.modern_bert_base, llm_type=LLMHFPath.mistral_7b, corpus=dataloader
+    )
 
     queries = [
         "When is born Emannuel Macron?",

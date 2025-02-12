@@ -57,6 +57,13 @@ class DatasetWrapper(IterableDataset[Dict[str, str]]):
         for file_path in self.list_files:
             yield from self._read_file_in_chunks(file_path)
 
+    def generate_dataloader(self, batch_size: int = 10, tokenize: bool = False) -> DataLoader:
+        dataset = Dataset.from_generator(corpus.__iter__)
+        if tokenize:
+            dataset = dataset.map(self.tokenization, batched=True)
+        dataloader = DataLoader(dataset, batch_size=batch_size)
+        return dataloader
+
     def tokenization(self, example: Dict[str, Any]) -> Dict[str, torch.Tensor]:
         return self.tokenizer(example["content"], return_tensors="pt", padding=True)
 
@@ -66,11 +73,8 @@ if __name__ == "__main__":
         "data/corpus/docs.mistral.ai",
         chunk_size=8192,  # tokenizer="Alibaba-NLP/gte-large-en-v1.5"
     )
-    dataset = Dataset.from_generator(corpus.__iter__)
-    dataset = dataset.map(corpus.tokenization, batched=True)
-    dataset.with_format("torch")
-    dataloader = DataLoader(dataset, batch_size=10)
 
+    dataloader = corpus.generate_dataloader()
     for k in dataloader:
         print((k["input_ids"]))
         break
