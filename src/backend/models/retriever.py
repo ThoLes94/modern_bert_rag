@@ -3,18 +3,19 @@ from typing import Dict, List, Optional
 
 import numpy as np
 import numpy.typing as npt
+import torch
 
 from src.backend.models.encoder import BertHFPath, BERTWrapperHF
 
 if True:
-    # Need to import faiss after to avoid segment fault error ....
+    # Need to import faiss after to avoid segmentation fault error ....
     import faiss
 
 
 class BiEncoderRetriever:
     def __init__(
         self,
-        bert_type: BertHFPath = BertHFPath.modern_bert_large,
+        bert_type: BertHFPath = BertHFPath.modern_bert_large_embed,
         root_folder: str = "data/embedding",
         save_load_embed_on_disk: bool = False,
     ) -> None:
@@ -50,6 +51,8 @@ class BiEncoderRetriever:
                 self.embeddings = docs_embed
             else:
                 self.embeddings = np.concatenate((self.embeddings, docs_embed), axis=0)
+            if self.save_load_embed_on_disk:
+                self._save_embed_doc(docs_id, docs_embed)
 
     def load_embeddings(self, docs_id: List[str]) -> None:
         for doc_id in docs_id:
@@ -79,10 +82,9 @@ class BiEncoderRetriever:
             np.save(self._get_file_name(name), doc_embed)
 
     def retrieve(self, query: str, retun_n_doc: int = 2) -> List[str]:
-        query_embedding = self.encoder.encode_querys([query])
+        query_embedding = self.encoder.encode_queries([query])
 
-        distances, indices = self.faiss_index.search(query_embedding, retun_n_doc)
-
+        _, indices = self.faiss_index.search(query_embedding, retun_n_doc)
         # Print the most similar documents
         return [self.docs_id[i] for i in indices[0]]
 
@@ -102,7 +104,7 @@ if __name__ == "__main__":
             "The horse is white.",
         ],
     }
-    bi_encoder_retriver = BiEncoderRetriever(BertHFPath.modern_bert_large)
+    bi_encoder_retriver = BiEncoderRetriever(BertHFPath.gte_large)
     bi_encoder_retriver.embed_corpus(documents)
 
     # print(bi_encoder_retriver.embeddings.shape)
