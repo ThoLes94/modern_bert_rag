@@ -44,8 +44,9 @@ class BiEncoderRetriever:
 
         else:
             docs_embed = self.encoder.encode_documents(docs_content)
+            docs_embed_normalized = docs_embed / np.linalg.norm(docs_embed, axis=0)
             self.docs_id.extend(docs_id)
-            self.faiss_index.add(docs_embed)
+            self.faiss_index.add(docs_embed_normalized)
 
             if self.embeddings is None:
                 self.embeddings = docs_embed
@@ -59,7 +60,8 @@ class BiEncoderRetriever:
             file_path = self._get_file_name(doc_id)
             assert os.path.exists(file_path)
             embed = np.expand_dims(np.load(file_path), axis=0)
-            self.faiss_index.add(embed)
+            embed_normalized = embed / np.linalg.norm(embed, axis=0)
+            self.faiss_index.add(embed_normalized)
             if self.embeddings is None:
                 self.embeddings = embed
             else:
@@ -83,8 +85,9 @@ class BiEncoderRetriever:
 
     def retrieve(self, query: str, retun_n_doc: int = 2) -> List[str]:
         query_embedding = self.encoder.encode_queries([query])
+        query_embedding_normalized = query_embedding / np.linalg.norm(query_embedding)
 
-        _, indices = self.faiss_index.search(query_embedding, retun_n_doc)
+        _, indices = self.faiss_index.search(query_embedding_normalized, retun_n_doc)
         # Print the most similar documents
         return [self.docs_id[i] for i in indices[0]]
 
@@ -96,15 +99,26 @@ class BiEncoderRetriever:
 
 
 if __name__ == "__main__":
-    queries = ["What is TSNE?", "Who is Laurens van der Maaten?", "What color is the horse?"]
     documents = {
-        "id": ["TSNE", "horse"],
+        "id": ["Emmanuel Macron", "TSNE", "horse", "first", "second"],
         "content": [
+            "Emmanuel Macron was born on December 21, 1977, in Amiens, France. He is a French politician who served as the President of France from 2017 to 2022. Before his presidency, he worked as an investment banker and was an inspector of finances for the French government.",
             "TSNE is a dimensionality reduction algorithm created by Laurens van Der Maaten",
             "The horse is white.",
+            "The first-line therapy for patients with metastatic pancreatic cancer is FOLFIRINOX",
+            "The second-line therapy for patients with metastatic pancreatic cancer is Gemzar-Abraxane",
         ],
     }
-    bi_encoder_retriver = BiEncoderRetriever(BertHFPath.gte_large)
+
+    queries = [
+        "When is born Emannuel Macron?",
+        "What color is the horse?",
+        "What is TSNE?",
+        "What is the second line of the metastatic pancreatic cancer?",
+        "What is the first line of the metastatic pancreatic cancer?",
+    ]
+
+    bi_encoder_retriver = BiEncoderRetriever(BertHFPath.gte_base)
     bi_encoder_retriver.embed_corpus(documents)
 
     # print(bi_encoder_retriver.embeddings.shape)
