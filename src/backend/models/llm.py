@@ -1,7 +1,7 @@
 # import torch
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -76,14 +76,14 @@ if __name__ == "__main__":
     llm_wrapper = LLMWrapper()
     # format and tokenize the tool use prompt
 
-    user_prompts = [
+    user_prompts: List[Tuple[str, Optional[List[Callable[..., Any]]]]] = [
         ("Hello, I'm Thomas, what's your name?", None),
         ("Btw, yesterday I was on a rock concert.", None),
         ("What's my name?", None),
         ("What's the weather like in Paris?", None),
     ]
-    for prompt, tools in user_prompts:
-        messages = llm_wrapper.generate_answer(prompt, tools)
+    for prompt, t in user_prompts:
+        messages = llm_wrapper.generate_answer(prompt, t)
 
     print(messages.last_answer)
     # meta-llama 3.2

@@ -1,6 +1,6 @@
 import random
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Dict, Iterator, List, Optional, cast
 
 import torch
 from datasets import Dataset
@@ -57,15 +57,20 @@ class DatasetWrapper(IterableDataset[Dict[str, str]]):
         for file_path in self.list_files:
             yield from self._read_file_in_chunks(file_path)
 
-    def generate_dataloader(self, batch_size: int = 10, tokenize: bool = False) -> DataLoader:
+    def generate_dataloader(
+        self, batch_size: int = 10, tokenize: bool = False
+    ) -> DataLoader[Dict[str, torch.Tensor]]:
         dataset = Dataset.from_generator(corpus.__iter__)
         if tokenize:
             dataset = dataset.map(self.tokenization, batched=True)
         dataloader = DataLoader(dataset, batch_size=batch_size)
         return dataloader
 
-    def tokenization(self, example: Dict[str, Any]) -> Dict[str, torch.Tensor]:
-        return self.tokenizer(example["content"], return_tensors="pt", padding=True)
+    def tokenization(self, example: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+        return cast(
+            Dict[str, torch.Tensor],
+            self.tokenizer(example["content"], return_tensors="pt", padding=True),
+        )
 
 
 if __name__ == "__main__":

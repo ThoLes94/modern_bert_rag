@@ -3,10 +3,8 @@ import json
 import logging
 from typing import Dict
 
-from datasets import Dataset
 from fastapi import FastAPI
 from pydantic import BaseModel
-from torch.utils.data import DataLoader
 
 from src.backend.corpus.corpus import DatasetWrapper
 from src.backend.models.benchmark import benchmark_on_corpus
