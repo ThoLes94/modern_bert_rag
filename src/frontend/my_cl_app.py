@@ -48,6 +48,8 @@ async def main(message: cl.Message) -> None:
                 "question": message.content,
                 "use_llm": cl.user_session.get("use_llm", False),
                 "return_n_doc": cl.user_session.get("num_retrieve_docs", 4),
+                "encoder": cl.user_session.get("encoder", "nomic-ai/modernbert-embed-base"),
+                "chunk_size": cl.user_session.get("chunk_size", 2048),
             },
         )
         await cl.Message(content=answer).send()
@@ -70,6 +72,28 @@ async def start() -> None:
             Switch(id="use_llm", label="use LLM in answer", initial=False),
             Slider(
                 id="num_retrieve_docs", label="Number of documents to retreive", initial=4, min=1
+            ),
+            Select(
+                id="encoder",
+                label="Encoder to use",
+                initial="modern_bert_base_embed",
+                items={
+                    "modern_bert_large_embed": "lightonai/modernbert-embed-large",
+                    "modern_bert_base_embed": "nomic-ai/modernbert-embed-base",
+                    "modern_bert_base": "answerdotai/ModernBERT-base",
+                    "modern_bert_large": "answerdotai/ModernBERT-large",
+                    "gte_base": "Alibaba-NLP/gte-base-en-v1.5",
+                    "gte_large": "Alibaba-NLP/gte-large-en-v1.5",
+                    "modern_bert_base_v2": "Alibaba-NLP/gte-modernbert-base",
+                },
+            ),
+            Slider(
+                id="chunk_size",
+                label="Chunk size for the dataset",
+                initial=8192,
+                min=256,
+                max=8192,
+                step=256,
             ),
         ]
     ).send()
@@ -94,11 +118,13 @@ async def update_settings(settings: cl.ChatSettings) -> None:
     """Toggles the LLM activation state."""
     print("Setup agent with following settings: ", settings)
     use_llm = settings["use_llm"]
-    if use_llm != cl.user_session.get("use_llm", False):
-        cl.user_session.set("use_llm", use_llm)
+    cl.user_session.set("use_llm", use_llm)
     num_retrieve_docs = settings["num_retrieve_docs"]
-    if num_retrieve_docs != cl.user_session.get("num_retrieve_docs", 4):
-        cl.user_session.set("num_retrieve_docs", num_retrieve_docs)
+    cl.user_session.set("num_retrieve_docs", num_retrieve_docs)
+    encoder = settings["encoder"]
+    cl.user_session.set("encoder", encoder)
+    chunk_size = settings["chunk_size"]
+    cl.user_session.set("chunk_size", chunk_size)
 
 
 async def benchmark_encoder_picker() -> None:

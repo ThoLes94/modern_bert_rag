@@ -44,21 +44,10 @@ def benchmark_on_corpus(
 
     corpus = DatasetWrapper(
         "data/corpus/docs.mistral.ai",
-        chunk_size=chunk_size,
-        tokenizer_path=encoder_path.value,
-        use_random_chunk_size=use_random_chunk_size,
     )
-    dataset = Dataset.from_generator(corpus.__iter__)
-
-    dataset = dataset.map(corpus.tokenization, batched=True)
-    # dataset.with_format("torch")
-    columns_of_interest = {"input_ids", "attention_mask", "token_type_ids"}.intersection(
-        dataset.column_names
+    dataloader = corpus.get_dataloader(
+        batch_size=batch_size, tokenizer_path=encoder_path, chunk_size=chunk_size, tokenize=True
     )
-
-    dataset.set_format("pt", columns=columns_of_interest, output_all_columns=False)
-
-    dataloader = DataLoader(dataset, batch_size=batch_size, drop_last=True, num_workers=32)
 
     evaluation_times = []
     with torch.no_grad():

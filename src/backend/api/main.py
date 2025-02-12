@@ -6,7 +6,6 @@ from typing import Dict
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from src.backend.corpus.corpus import DatasetWrapper
 from src.backend.models.benchmark import benchmark_on_corpus
 from src.backend.models.encoder import BertHFPath
 from src.backend.models.llm import LLMHFPath
@@ -17,13 +16,13 @@ logging.basicConfig(filename="query_logs.log", level=logging.INFO)
 
 
 app = FastAPI()
-# Prepare corpus at startup
-corpus = DatasetWrapper("data/corpus/docs.mistral.ai", chunk_size=2048)
-dataloader = corpus.generate_dataloader()
 
 # Initialize RAG system
 rag_wrapper = RAGWrapper(
-    BertHFPath.modern_bert_base_embed, llm_type=LLMHFPath.mistral_7b, corpus=dataloader
+    BertHFPath.modern_bert_base_embed,
+    llm_type=LLMHFPath.mistral_7b,
+    corpus_path="data/corpus/docs.mistral.ai",
+    chunk_size=2048,
 )
 
 
@@ -31,13 +30,19 @@ class QueryRequest(BaseModel):
     question: str
     use_llm: bool = False
     return_n_doc: int = 4
+    encoder: BertHFPath = BertHFPath.modern_bert_base_embed
+    chunk_size: int = 2048
 
 
 @app.post("/query")
 async def query_rag(request: QueryRequest) -> Dict[str, str]:
     """API endpoint to get answers from RAG."""
     response = rag_wrapper.answer_question(
-        request.question, use_llm=request.use_llm, return_n_doc=request.return_n_doc
+        request.question,
+        use_llm=request.use_llm,
+        return_n_doc=request.return_n_doc,
+        encoder_path=request.encoder,
+        chunk_size=request.chunk_size,
     )
     return {"answer": response}
 

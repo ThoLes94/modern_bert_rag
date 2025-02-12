@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable, List, Optional
 
 from tqdm import tqdm
 
@@ -11,20 +11,28 @@ from src.backend.models.retriever import BiEncoderRetriever
 class RAGWrapper:
     def __init__(
         self,
-        encoder_type: BertHFPath,
+        encoder_path: BertHFPath,
         llm_type: LLMHFPath,
-        corpus: Iterable[Dict[str, List[str]]],
+        corpus_path: str,
+        chunk_size: int = 2048,
     ) -> None:
         self.llm_type = llm_type
         self.retriever = BiEncoderRetriever(
-            encoder_type, save_load_embed_on_disk=True, root_folder="data/embedding/"
+            encoder_path, save_load_embed_on_disk=True, root_folder="data/embedding/"
         )
-        self._prepare_corpus(corpus)
+        self.path_to_file = corpus_path
+        self.chunk_size = chunk_size
+        self.encoder = encoder_path
+        self.dataset = DatasetWrapper(self.path_to_file)
+        self._prepare_corpus()
         self._initialize_llm()
 
-    def _prepare_corpus(self, corpus: Iterable[Dict[str, List[str]]]) -> None:
+    def _prepare_corpus(self) -> None:
         self.corpus: Dict[str, str] = {}
-        for docs in tqdm(corpus):
+        dataloader = self.dataset.get_dataloader(
+            batch_size=10, tokenizer_path=self.encoder, chunk_size=self.chunk_size
+        )
+        for docs in tqdm(dataloader):
             self.corpus.update(
                 {doc_id: doc_content for doc_id, doc_content in zip(docs["id"], docs["content"])}
             )
@@ -48,7 +56,16 @@ class RAGWrapper:
         """
         return prompt
 
-    def answer_question(self, question: str, use_llm: bool = False, return_n_doc: int = 1) -> str:
+    def answer_question(
+        self,
+        question: str,
+        encoder_path: BertHFPath,
+        chunk_size: int,
+        use_llm: bool = False,
+        return_n_doc: int = 1,
+    ) -> str:
+        if self.retriever.bert_type != encoder_path.value or chunk_size != self.chunk_size:
+            self._update_encoder_chunk_size(encoder_path, chunk_size)
         documents = "\n".join(
             [
                 self.corpus[document_name]
@@ -63,17 +80,25 @@ class RAGWrapper:
         llm_output = self.llm.generate_answer(prompt=prompt)
         return llm_output.last_answer
 
+    def _update_encoder_chunk_size(self, encoder_path: BertHFPath, chumk_size: int) -> None:
+        self.retriever = BiEncoderRetriever(
+            encoder_path, save_load_embed_on_disk=True, root_folder="data/embedding/"
+        )
+        self.encoder = encoder_path
+        self.chunk_size = chumk_size
+        self._prepare_corpus()
+
 
 if __name__ == "__main__":
-    corpus = DatasetWrapper(
-        "data/corpus/docs.mistral.ai", chunk_size=2048, tokenizer_path=BertHFPath.modern_bert_base
-    )
-    dataloader = corpus.generate_dataloader(batch_size=10)
-
     # Initialize RAG system
     rag_wrapper = RAGWrapper(
-        BertHFPath.modern_bert_base, llm_type=LLMHFPath.mistral_7b, corpus=dataloader
+        BertHFPath.modern_bert_base,
+        llm_type=LLMHFPath.mistral_7b,
+        corpus_path="data/corpus/docs.mistral.ai",
+        chunk_size=2048,
     )
+
+    rag_wrapper._update_encoder_chunk_size(BertHFPath.modern_bert_base_embed, 2048)
 
     queries = [
         "When is born Emannuel Macron?",
@@ -84,4 +109,11 @@ if __name__ == "__main__":
     ]
 
     for query in queries:
-        print(rag_wrapper.answer_question(query, return_n_doc=2))
+        print(
+            rag_wrapper.answer_question(
+                query,
+                BertHFPath.modern_bert_base_embed,
+                2048,
+                return_n_doc=2,
+            )
+        )
