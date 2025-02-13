@@ -71,19 +71,18 @@ def benchmark_on_corpus(
                     inputs = {
                         k: v.to(device) for k, v in docs.items() if k not in ["content", "id"]
                     }
-                    num_tokken += inputs["input_ids"].shape[0]
+                    token = inputs["input_ids"].numel()
+                    num_tokken += token
                     start_evaluation = time.perf_counter()
                     model(**inputs)
                     evaluation_time = time.perf_counter() - start_evaluation
                     evaluation_times.append(evaluation_time)
-                    token_counts.append(inputs["input_ids"].shape[0])
+                    token_counts.append(inputs["input_ids"].numel())
 
     total_time = time.perf_counter() - start_time
 
     mean_time = np.mean(evaluation_times)
     var_time = np.var(evaluation_times)
-
-    tokens_per_sec = np.sum(np.array(token_counts)) / total_time
 
     results = {
         "exp": {
@@ -96,8 +95,10 @@ def benchmark_on_corpus(
         "mean_time": str(sum(evaluation_times) / len(evaluation_times)),
         "num_tokken": num_tokken,
         "var": var_time,
-        "time/tokken": mean_time / np.mean(num_tokken),
-        "tokken/sec": tokens_per_sec,
+        "mean_time/tokken": mean_time / np.mean(token_counts),
+        "total_time/tokken": total_time / np.sum(token_counts),
+        "token/mean_time": np.mean(token_counts) / mean_time,
+        "token/total_time": np.sum(token_counts) / total_time,
     }
 
     logging.info(json.dumps(results))
