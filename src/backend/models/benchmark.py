@@ -68,16 +68,25 @@ def benchmark_on_corpus(
         with torch.autocast(device_type=device, dtype=torch.float16):
             for i in tqdm(range(num_pass)):
                 for docs in tqdm(dataloader):
-                    inputs = {
-                        k: v.to(device) for k, v in docs.items() if k not in ["content", "id"]
-                    }
-                    token = inputs["input_ids"].numel()
-                    num_tokken += token
-                    start_evaluation = time.perf_counter()
-                    model(**inputs)
-                    evaluation_time = time.perf_counter() - start_evaluation
-                    evaluation_times.append(evaluation_time)
+                    num_tokken += inputs["input_ids"].numel()
                     token_counts.append(inputs["input_ids"].numel())
+
+                    start_event = torch.cuda.Event(enable_timing=True)
+                    end_event = torch.cuda.Event(enable_timing=True)
+
+                    inputs = {
+                        k: v.to(device, non_blocking=True)  # Use non-blocking transfers
+                        for k, v in docs.items()
+                        if k not in ["content", "id"]
+                    }
+                    torch.cuda.synchronize()  # Ensure all events are completed
+
+                    # Model forward pass timing
+                    start_event.record()
+                    _ = model(**inputs)
+                    end_event.record()
+                    torch.cuda.synchronize()
+                    evaluation_times.append(start_event.elapsed_time(end_event) / 1000)
 
     total_time = time.perf_counter() - start_time
 
