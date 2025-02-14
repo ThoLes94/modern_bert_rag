@@ -26,11 +26,13 @@ poetry install
 ## 🔥 **Running the Servers**
 
 ### **Frontend (Chainlit UI)**
+Launch front end server:
 ```sh
 make frontend
 ```
 
 ### **Backend (FastAPI)**
+Launch backend server:
 ```sh
 make backend
 ```
@@ -136,3 +138,21 @@ You can find the benchmark code [here](src/backend/models/benchmark.py).
 - **Max Chunk 8192 (batch size 100)**
   - ModernBERT Base: **2084K tokens/sec**
   - GTE Base: **221K tokens/sec**
+
+
+## 🛠️ Development Commands
+
+### Code Formatting & Style Checks
+- **Run Style Checks:**
+
+Runs `black` `mypy` and `flake8` to enforce code style.
+```sh
+make cheks
+```
+
+- **Run Style Checks:**
+This repository use pre commit, you can install it like:
+
+```sh
+make pre-commit-install
+```

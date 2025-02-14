@@ -101,7 +101,7 @@ def benchmark_on_corpus(
 def benchmark_on_cuda(
     num_pass: int,
     model: torch.nn.Module,
-    dataloader: DataLoader,
+    dataloader: DataLoader[Dict[str, Any]],
 ) -> Tuple[List[int], List[float]]:
     token_counts: List[int] = []
     evaluation_times: List[float] = []
@@ -135,7 +135,7 @@ def benchmark_on_cuda(
 def benchmark_on_cpu(
     num_pass: int,
     model: torch.nn.Module,
-    dataloader: DataLoader,
+    dataloader: DataLoader[Dict[str, Any]],
 ) -> Tuple[List[int], List[float]]:
     token_counts: List[int] = []
     evaluation_times: List[float] = []
