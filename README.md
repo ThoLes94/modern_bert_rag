@@ -44,16 +44,15 @@ make backend
 - [x] Fully Functional RAG Pipeline
 - [x] Exposed API
 - [x] Interactive Frontend
-- [ ] Add Encoder Evaluation
+- [x] Add Encoder Benchmark
 
 ---
 
 ## 🔄 **Planned Improvements**
 
 ### **🔹 Encoder Enhancements**
-- [ ] Implement multi-processing for faster corpus embedding
 - [x] Improve dataset structure support
-- [ ] Add a second encoder for comparison
+- [x] Add a second encoder for comparison
 
 ### **🔹 RAG Improvements**
 - [ ] Add LLM pre-processing for better query generation
@@ -113,3 +112,27 @@ and the filter it and clean it with
 ```sh
 python scripts.filter_corpus.py <path_to_the_corpus>
 ```
+
+
+## 🚀 **Benchmark**
+
+You can find the benchmark code [here](src/backend/models/benchmark.py).
+
+### **Performance**
+
+#### **L4**
+- **Max Chunk 512 (batch size 600)**
+  - ModernBERT Base: **38K tokens/sec**
+  - GTE Base: **46K tokens/sec**
+- **Max Chunk 8192 (batch size 20)**
+  - ModernBERT Base: **8K tokens/sec**
+  - GTE Base: **19K tokens/sec**
+
+#### **A Series**
+- **Max Chunk 512 (batch size 600)**
+  - ModernBERT Base: **1091 tokens/sec**
+  - GTE Base: **715K tokens/sec**
+
+- **Max Chunk 8192 (batch size 100)**
+  - ModernBERT Base: **2084K tokens/sec**
+  - GTE Base: **221K tokens/sec**

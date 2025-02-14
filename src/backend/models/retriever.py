@@ -3,7 +3,6 @@ from typing import Dict, List, Optional
 
 import numpy as np
 import numpy.typing as npt
-import torch
 
 from src.backend.models.encoder import BertHFPath, BERTWrapperHF
 
