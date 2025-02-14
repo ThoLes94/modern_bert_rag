@@ -151,7 +151,8 @@ make cheks
 ```
 
 - **Run Style Checks:**
-This repository use pre commit, you can install it like:
+
+This repository use pre commit, you can install it with:
 
 ```sh
 make pre-commit-install
