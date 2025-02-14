@@ -7,11 +7,9 @@ check_black:
 black:
 	python -m black -t py310 --line-length 100 ${STYLE_PACKAGES}
 
-style: black
+checks: checkstyle lint mypy
 
-checks: style lint mypy
-
-checkstyle: check_black check_isort
+checkstyle: check_black
 check_style: checkstyle
 
 lint:
