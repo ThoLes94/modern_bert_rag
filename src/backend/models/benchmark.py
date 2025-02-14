@@ -2,11 +2,10 @@
 import json
 import logging
 import time
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import torch
-from datasets import Dataset
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import AutoModel
@@ -49,8 +48,7 @@ def benchmark_on_corpus(
         batch_size=batch_size, tokenizer_path=encoder_path, chunk_size=chunk_size, tokenize=True
     )
 
-    evaluation_times = []
-    with torch.no_grad():
+    with torch.no_grad():  # WARM up
         with torch.autocast(device_type=device, dtype=torch.float16):
             for docs in dataloader:
                 for i in range(2):
@@ -60,34 +58,19 @@ def benchmark_on_corpus(
                     model(**inputs)
                 break
 
-    num_tokken = 0
-    token_counts = []
-
     start_time = time.perf_counter()
-    with torch.no_grad():
-        with torch.autocast(device_type=device, dtype=torch.float16):
-            for i in tqdm(range(num_pass)):
-                for docs in tqdm(dataloader):
-                    num_tokken += inputs["input_ids"].numel()
-                    token_counts.append(inputs["input_ids"].numel())
-
-                    start_event = torch.cuda.Event(enable_timing=True)
-                    end_event = torch.cuda.Event(enable_timing=True)
-
-                    inputs = {
-                        k: v.to(device, non_blocking=True)  # Use non-blocking transfers
-                        for k, v in docs.items()
-                        if k not in ["content", "id"]
-                    }
-                    torch.cuda.synchronize()  # Ensure all events are completed
-
-                    # Model forward pass timing
-                    start_event.record()
-                    _ = model(**inputs)
-                    end_event.record()
-                    torch.cuda.synchronize()
-                    evaluation_times.append(start_event.elapsed_time(end_event) / 1000)
-
+    if torch.cuda.is_available():
+        token_counts, evaluation_times = benchmark_on_cuda(
+            num_pass,
+            model,
+            dataloader,
+        )
+    else:
+        token_counts, evaluation_times = benchmark_on_cpu(
+            num_pass,
+            model,
+            dataloader,
+        )
     total_time = time.perf_counter() - start_time
 
     mean_time = np.mean(evaluation_times)
@@ -102,7 +85,7 @@ def benchmark_on_corpus(
         },
         "total_time": str(total_time),
         "mean_time": str(sum(evaluation_times) / len(evaluation_times)),
-        "num_tokken": num_tokken,
+        "num_tokken": sum(token_counts),
         "var": var_time,
         "mean_time/tokken": mean_time / np.mean(token_counts),
         "total_time/tokken": total_time / np.sum(token_counts),
@@ -113,6 +96,64 @@ def benchmark_on_corpus(
     logging.info(json.dumps(results))
 
     return results
+
+
+def benchmark_on_cuda(
+    num_pass: int,
+    model: torch.nn.Module,
+    dataloader: DataLoader,
+) -> Tuple[List[int], List[float]]:
+    token_counts: List[int] = []
+    evaluation_times: List[float] = []
+    with torch.no_grad():
+        with torch.autocast(device_type=device, dtype=torch.float16):
+            for i in tqdm(range(num_pass)):
+                for docs in tqdm(dataloader):
+                    inputs = {
+                        k: v.to(device, non_blocking=True)  # Use non-blocking transfers
+                        for k, v in docs.items()
+                        if k not in ["content", "id"]
+                    }
+
+                    token_counts.append(inputs["input_ids"].numel())
+
+                    start_event = torch.cuda.Event(enable_timing=True)
+                    end_event = torch.cuda.Event(enable_timing=True)
+
+                    torch.cuda.synchronize()  # Ensure all events are completed
+
+                    # Model forward pass timing
+                    start_event.record()
+                    _ = model(**inputs)
+                    end_event.record()
+                    torch.cuda.synchronize()
+                    evaluation_times.append(start_event.elapsed_time(end_event) / 1000)
+
+    return token_counts, evaluation_times
+
+
+def benchmark_on_cpu(
+    num_pass: int,
+    model: torch.nn.Module,
+    dataloader: DataLoader,
+) -> Tuple[List[int], List[float]]:
+    token_counts: List[int] = []
+    evaluation_times: List[float] = []
+    with torch.no_grad():
+        with torch.autocast(device_type=device, dtype=torch.float16):
+            for i in tqdm(range(num_pass)):
+                for docs in tqdm(dataloader):
+                    inputs = {
+                        k: v.to(device) for k, v in docs.items() if k not in ["content", "id"]
+                    }
+                    token = inputs["input_ids"].numel()
+                    token_counts.append(token)
+                    start_evaluation = time.perf_counter()
+                    model(**inputs)
+                    evaluation_time = time.perf_counter() - start_evaluation
+                    evaluation_times.append(evaluation_time)
+
+    return token_counts, evaluation_times
 
 
 if __name__ == "__main__":
