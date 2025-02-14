@@ -93,7 +93,7 @@ class DatasetWrapper:
     def tokenization(
         self,
         example: Dict[str, torch.Tensor],
-        tokenizer: BertHFPath = BertHFPath.modern_bert_base_embed,
+        tokenizer: torch.nn.Module,
     ) -> Dict[str, torch.Tensor]:
 
         return cast(
